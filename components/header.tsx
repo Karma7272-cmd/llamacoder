@@ -1,20 +1,15 @@
-import Image from "next/image";
-
+import LogoSmall from "@/components/icons/logo-small";
 import GithubIcon from "@/components/icons/github-icon";
-import logo from "@/public/logo.png";
 import Link from "next/link";
 
 export default function Header() {
   return (
     <header className="relative mx-auto flex w-full shrink-0 items-center justify-center py-6">
-      <Link href="/">
-        <Image
-          src={logo}
-          alt=""
-          quality={100}
-          className="mx-auto h-9 object-contain"
-          priority
-        />
+      <Link href="/" className="flex items-center gap-3">
+        <LogoSmall className="size-9" />
+        <h1 className="text-2xl font-bold tracking-tighter sm:text-3xl">
+          GeminiCoder
+        </h1>
       </Link>
 
       <div className="absolute right-3">

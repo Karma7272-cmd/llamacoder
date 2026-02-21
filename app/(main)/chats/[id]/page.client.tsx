@@ -6,7 +6,6 @@ import { splitByFirstCodeFence } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { startTransition, use, useEffect, useRef, useState } from "react";
-import { ChatCompletionStream } from "together-ai/lib/ChatCompletionStream.mjs";
 import ChatBox from "./chat-box";
 import ChatLog from "./chat-log";
 import CodeViewer from "./code-viewer";
@@ -38,16 +37,24 @@ export default function PageClient({ chat }: { chat: Chat }) {
       context.setStreamPromise(undefined);
 
       const stream = await streamPromise;
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
       let didPushToCode = false;
       let didPushToPreview = false;
+      let fullContent = "";
 
-      ChatCompletionStream.fromReadableStream(stream)
-        .on("content", (delta, content) => {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const delta = decoder.decode(value);
+          fullContent += delta;
           setStreamText((text) => text + delta);
 
           if (
             !didPushToCode &&
-            splitByFirstCodeFence(content).some(
+            splitByFirstCodeFence(fullContent).some(
               (part) => part.type === "first-code-fence-generating",
             )
           ) {
@@ -58,7 +65,7 @@ export default function PageClient({ chat }: { chat: Chat }) {
 
           if (
             !didPushToPreview &&
-            splitByFirstCodeFence(content).some(
+            splitByFirstCodeFence(fullContent).some(
               (part) => part.type === "first-code-fence",
             )
           ) {
@@ -66,24 +73,22 @@ export default function PageClient({ chat }: { chat: Chat }) {
             setIsShowingCodeViewer(true);
             setActiveTab("preview");
           }
-        })
-        .on("finalContent", async (finalText) => {
-          startTransition(async () => {
-            const message = await createMessage(
-              chat.id,
-              finalText,
-              "assistant",
-            );
+        }
+      } catch (error) {
+        console.error("Stream error:", error);
+      } finally {
+        startTransition(async () => {
+          const message = await createMessage(chat.id, fullContent, "assistant");
 
-            startTransition(() => {
-              isHandlingStreamRef.current = false;
-              setStreamText("");
-              setStreamPromise(undefined);
-              setActiveMessage(message);
-              router.refresh();
-            });
+          startTransition(() => {
+            isHandlingStreamRef.current = false;
+            setStreamText("");
+            setStreamPromise(undefined);
+            setActiveMessage(message);
+            router.refresh();
           });
         });
+      }
     }
 
     f();
