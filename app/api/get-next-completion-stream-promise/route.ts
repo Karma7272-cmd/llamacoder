@@ -1,13 +1,9 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
-import { Pool } from "@neondatabase/serverless";
+import { getPrisma } from "@/lib/prisma";
 import { z } from "zod";
-import Together from "together-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(req: Request) {
-  const neon = new Pool({ connectionString: process.env.DATABASE_URL });
-  const adapter = new PrismaNeon(neon);
-  const prisma = new PrismaClient({ adapter });
+  const prisma = getPrisma();
   const { messageId, model } = await req.json();
 
   const message = await prisma.message.findUnique({
@@ -36,29 +32,75 @@ export async function POST(req: Request) {
     messages = [messages[0], messages[1], messages[2], ...messages.slice(-7)];
   }
 
-  let options: ConstructorParameters<typeof Together>[0] = {};
-  if (process.env.HELICONE_API_KEY) {
-    options.baseURL = "https://together.helicone.ai/v1";
-    options.defaultHeaders = {
-      "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
-      "Helicone-Property-appname": "LlamaCoder",
-      "Helicone-Session-Id": message.chatId,
-      "Helicone-Session-Name": "LlamaCoder Chat",
-    };
+  const genAI = new GoogleGenerativeAI(
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+  );
+
+  const geminiModel = genAI.getGenerativeModel({ model });
+
+  // Convert messages to Gemini format (system message + content)
+  let systemPrompt = "";
+  const conversationHistory = [];
+
+  for (const msg of messages) {
+    if (msg.role === "system") {
+      systemPrompt = msg.content;
+    } else if (msg.role === "user") {
+      conversationHistory.push({
+        role: "user",
+        parts: [{ text: msg.content }],
+      });
+    } else if (msg.role === "assistant") {
+      conversationHistory.push({
+        role: "model",
+        parts: [{ text: msg.content }],
+      });
+    }
   }
 
-  const together = new Together(options);
-
-  const res = await together.chat.completions.create({
-    model,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    stream: true,
-    temperature: 0.2,
-    max_tokens: 9000,
+  const chat = geminiModel.startChat({
+    history: conversationHistory,
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 9000,
+    },
+    systemInstruction: systemPrompt || undefined,
   });
 
-  return new Response(res.toReadableStream());
+  // Create a readable stream for streaming response
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const lastUserMessage = messages
+          .reverse()
+          .find((m) => m.role === "user");
+        if (!lastUserMessage) {
+          controller.close();
+          return;
+        }
+
+        const response = await chat.sendMessageStream(lastUserMessage.content);
+
+        for await (const chunk of response.stream) {
+          const text = chunk.text();
+          if (text) {
+            controller.enqueue(encoder.encode(text));
+          }
+        }
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Transfer-Encoding": "chunked",
+    },
+  });
 }
 
-export const runtime = "edge";
 export const maxDuration = 45;

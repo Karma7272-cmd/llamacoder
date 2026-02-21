@@ -1,23 +1,7 @@
 export const MODELS = [
   {
-    label: "Qwen 3 Coder",
-    value: "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
-  },
-  {
-    label: "GLM 4.5 Air",
-    value: "zai-org/GLM-4.5-Air-FP8",
-  },
-  {
-    label: "Llama 3.3 70B",
-    value: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-  },
-  {
-    label: "Kimi K2.1",
-    value: "moonshotai/Kimi-K2-Instruct-0905",
-  },
-  {
-    label: "DeepSeek V3",
-    value: "deepseek-ai/DeepSeek-V3",
+    label: "Gemini 1.5 Flash",
+    value: "gemini-1.5-flash",
   },
 ];
 

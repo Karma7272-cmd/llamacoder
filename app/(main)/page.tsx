@@ -77,13 +77,11 @@ export default function Home() {
         <div className="mt-10 flex grow flex-col items-center px-4 lg:mt-16">
           <a
             className="mb-4 inline-flex shrink-0 items-center rounded-full border-[0.5px] border-[#BABABA] px-3.5 py-1.5 text-xs text-black transition-shadow hover:shadow-sm"
-            href="https://togetherai.link/?utm_source=llamacoder&utm_medium=referral&utm_campaign=example-app"
+            href="https://ai.google.dev/"
             target="_blank"
           >
             <span className="text-center">
-              Powered by <span className="font-semibold">Together AI</span>.
-              Used by
-              <span className="font-semibold"> 1.1M+ users. </span>
+              Powered by <span className="font-semibold">Google Gemini</span>.
             </span>
           </a>
 
@@ -208,45 +206,8 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="absolute bottom-2 left-3 right-2.5 flex items-center justify-between">
+                  <input type="hidden" name="model" value={model} />
                   <div className="flex items-center gap-3">
-                    <Select.Root
-                      name="model"
-                      value={model}
-                      onValueChange={setModel}
-                    >
-                      <Select.Trigger className="inline-flex items-center gap-1 rounded-md p-1 text-sm text-gray-400 hover:bg-gray-100 hover:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-300">
-                        <Select.Value aria-label={model}>
-                          <span>{selectedModel?.label}</span>
-                        </Select.Value>
-                        <Select.Icon>
-                          <ChevronDownIcon className="size-3" />
-                        </Select.Icon>
-                      </Select.Trigger>
-                      <Select.Portal>
-                        <Select.Content className="overflow-hidden rounded-md bg-white shadow ring-1 ring-black/5">
-                          <Select.Viewport className="space-y-1 p-2">
-                            {MODELS.map((m) => (
-                              <Select.Item
-                                key={m.value}
-                                value={m.value}
-                                className="flex cursor-pointer items-center gap-1 rounded-md p-1 text-sm data-[highlighted]:bg-gray-100 data-[highlighted]:outline-none"
-                              >
-                                <Select.ItemText className="inline-flex items-center gap-2 text-gray-500">
-                                  {m.label}
-                                </Select.ItemText>
-                                <Select.ItemIndicator>
-                                  <CheckIcon className="size-3 text-blue-600" />
-                                </Select.ItemIndicator>
-                              </Select.Item>
-                            ))}
-                          </Select.Viewport>
-                          <Select.ScrollDownButton />
-                          <Select.Arrow />
-                        </Select.Content>
-                      </Select.Portal>
-                    </Select.Root>
-
-                    <div className="h-4 w-px bg-gray-200 max-sm:hidden" />
 
                     <Select.Root
                       name="quality"
@@ -363,17 +324,10 @@ export default function Home() {
             <div className="font-medium">
               Built with{" "}
               <a
-                href="https://togetherai.link/?utm_source=llamacoder&utm_medium=referral&utm_campaign=example-app"
+                href="https://ai.google.dev/"
                 className="font-semibold text-blue-600 underline-offset-4 transition hover:text-gray-700 hover:underline"
               >
-                Llama
-              </a>{" "}
-              and{" "}
-              <a
-                href="https://togetherai.link/?utm_source=llamacoder&utm_medium=referral&utm_campaign=example-app"
-                className="font-semibold text-blue-600 underline-offset-4 transition hover:text-gray-700 hover:underline"
-              >
-                Together AI
+                Google Gemini
               </a>
               .
             </div>

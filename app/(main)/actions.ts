@@ -7,7 +7,7 @@ import {
   softwareArchitectPrompt,
 } from "@/lib/prompts";
 import { notFound } from "next/navigation";
-import Together from "together-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function createChat(
   prompt: string,
@@ -26,61 +26,53 @@ export async function createChat(
     },
   });
 
-  let options: ConstructorParameters<typeof Together>[0] = {};
-  if (process.env.HELICONE_API_KEY) {
-    options.baseURL = "https://together.helicone.ai/v1";
-    options.defaultHeaders = {
-      "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
-      "Helicone-Property-appname": "LlamaCoder",
-      "Helicone-Session-Id": chat.id,
-      "Helicone-Session-Name": "LlamaCoder Chat",
-    };
-  }
-
-  const together = new Together(options);
+  const genAI = new GoogleGenerativeAI(
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+  );
 
   async function fetchTitle() {
-    const responseForChatTitle = await together.chat.completions.create({
-      model: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a chatbot helping the user create a simple app or script, and your current job is to create a succinct title, maximum 3-5 words, for the chat given their initial prompt. Please return only the title.",
-        },
+    const geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await geminiModel.generateContent({
+      contents: [
         {
           role: "user",
-          content: prompt,
+          parts: [
+            {
+              text: `You are a chatbot helping the user create a simple app or script, and your current job is to create a succinct title, maximum 3-5 words, for the chat given their initial prompt. Please return only the title.\n\nPrompt: ${prompt}`,
+            },
+          ],
         },
       ],
     });
-    const title = responseForChatTitle.choices[0].message?.content || prompt;
-    return title;
+    const title =
+      result.response.text() ||
+      prompt.substring(0, 50);
+    return title.trim();
   }
 
   async function fetchTopExample() {
-    const findSimilarExamples = await together.chat.completions.create({
-      model: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
-      messages: [
+    const geminiModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await geminiModel.generateContent({
+      contents: [
         {
-          role: "system",
-          content: `You are a helpful bot. Given a request for building an app, you match it to the most similar example provided. If the request is NOT similar to any of the provided examples, return "none". Here is the list of examples, ONLY reply with one of them OR "none":
+          role: "user",
+          parts: [
+            {
+              text: `You are a helpful bot. Given a request for building an app, you match it to the most similar example provided. If the request is NOT similar to any of the provided examples, return "none". Here is the list of examples, ONLY reply with one of them OR "none":
 
           - landing page
           - blog app
           - quiz app
           - pomodoro timer
-          `,
-        },
-        {
-          role: "user",
-          content: prompt,
+
+Prompt: ${prompt}`,
+            },
+          ],
         },
       ],
     });
 
-    const mostSimilarExample =
-      findSimilarExamples.choices[0].message?.content || "none";
+    const mostSimilarExample = result.response.text().toLowerCase() || "none";
     return mostSimilarExample;
   }
 
@@ -91,19 +83,28 @@ export async function createChat(
 
   let fullScreenshotDescription;
   if (screenshotUrl) {
-    const screenshotResponse = await together.chat.completions.create({
-      model: "Qwen/Qwen2.5-VL-72B-Instruct",
-      temperature: 0.2,
-      max_tokens: 1000,
-      messages: [
+    const geminiModel = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+    });
+
+    // Fetch the image data
+    const imageResponse = await fetch(screenshotUrl);
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const base64Image = Buffer.from(imageBuffer).toString("base64");
+    const mimeType = imageResponse.headers.get("content-type") || "image/png";
+
+    const result = await geminiModel.generateContent({
+      contents: [
         {
           role: "user",
-          content: [
-            { type: "text", text: screenshotToCodePrompt },
+          parts: [
             {
-              type: "image_url",
-              image_url: {
-                url: screenshotUrl,
+              text: screenshotToCodePrompt,
+            },
+            {
+              inlineData: {
+                mimeType,
+                data: base64Image,
               },
             },
           ],
@@ -111,34 +112,36 @@ export async function createChat(
       ],
     });
 
-    fullScreenshotDescription = screenshotResponse.choices[0].message?.content;
+    fullScreenshotDescription = result.response.text();
   }
 
   let userMessage: string;
   if (quality === "high") {
-    let initialRes = await together.chat.completions.create({
-      model: "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
-      messages: [
-        {
-          role: "system",
-          content: softwareArchitectPrompt,
-        },
+    const geminiModel = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+    });
+    const result = await geminiModel.generateContent({
+      contents: [
         {
           role: "user",
-          content: fullScreenshotDescription
-            ? fullScreenshotDescription + prompt
-            : prompt,
+          parts: [
+            {
+              text: `${softwareArchitectPrompt}\n\n${fullScreenshotDescription ? fullScreenshotDescription + "\n\n" + prompt : prompt}`,
+            },
+          ],
         },
       ],
-      temperature: 0.2,
-      max_tokens: 3000,
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 3000,
+      },
     });
 
-    userMessage = initialRes.choices[0].message?.content ?? prompt;
+    userMessage = result.response.text() ?? prompt;
   } else if (fullScreenshotDescription) {
     userMessage =
       prompt +
-      "RECREATE THIS APP AS CLOSELY AS POSSIBLE: " +
+      "\n\nRECREATE THIS APP AS CLOSELY AS POSSIBLE: " +
       fullScreenshotDescription;
   } else {
     userMessage = prompt;
