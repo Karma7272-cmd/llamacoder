@@ -14,7 +14,7 @@ export default function Header() {
 
       <div className="absolute right-3">
         <a
-          href="https://github.com/nutlope/llamacoder"
+          href="https://github.com/nutlope/geminicoder"
           target="_blank"
           className="ml-auto hidden items-center gap-3 rounded-full bg-white/95 px-5 py-2 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-100 transition-all hover:bg-white hover:shadow-md hover:ring-gray-200 sm:flex"
         >

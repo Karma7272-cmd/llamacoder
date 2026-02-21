@@ -392,7 +392,7 @@ export default function Home() {
               </svg>
             </Link>
             <Link
-              href="https://github.com/Nutlope/llamacoder"
+              href="https://github.com/Nutlope/geminicoder"
               className="group"
               aria-label=""
             >

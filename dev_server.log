@@ -1,0 +1,15 @@
+ WARN  using --force I sure hope you know what you are doing
+
+> geminicoder@0.1.0 dev /app
+> next dev
+
+   ▲ Next.js 15.5.0
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.2s
+ ○ Compiling / ...
+ ✓ Compiled / in 16s (2868 modules)
+ GET / 200 in 17945ms
+ ✓ Compiled in 2.7s (1219 modules)

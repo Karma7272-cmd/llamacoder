@@ -17,7 +17,7 @@
 
 ## Cloning & running
 
-1. Clone the repo: `git clone https://github.com/Nutlope/llamacoder`
+1. Clone the repo: `git clone https://github.com/Nutlope/geminicoder`
 2. Create a `.env` file and add your API keys:
    - **[Google AI API key](https://aistudio.google.com/app/apikey)**: `GOOGLE_GENERATIVE_AI_API_KEY=<your_google_ai_api_key>`
    - **[CSB API key](https://codesandbox.io/signin)**: `CSB_API_KEY=<your_csb_api_key>`
