@@ -11,7 +11,6 @@ export default function Header() {
         <Image
           src={logo}
           alt=""
-          quality={100}
           className="mx-auto h-9 object-contain"
           priority
         />
